@@ -1,0 +1,2080 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Player Card</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@500;700&family=Dancing+Script:wght@700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            min-height: 100vh;
+            background: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Rajdhani', sans-serif;
+            overflow: hidden;
+        }
+
+        /* Animated background */
+        .bg-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            background:
+                radial-gradient(ellipse at 50% 50%, rgba(30, 0, 50, 0.8) 0%, transparent 70%),
+                radial-gradient(ellipse at 80% 20%, rgba(255, 50, 0, 0.1) 0%, transparent 50%),
+                radial-gradient(ellipse at 20% 80%, rgba(0, 100, 255, 0.1) 0%, transparent 50%),
+                #000;
+        }
+
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .particle {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 50%;
+            animation: float 15s infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(100vh) rotate(0deg); opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { transform: translateY(-100vh) rotate(720deg); opacity: 0; }
+        }
+
+        .container {
+            position: relative;
+            z-index: 10;
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            gap: 60px;
+            padding: 20px;
+        }
+
+        /* Card Scene - Larger */
+        .card-scene {
+            width: 400px;
+            height: 600px;
+            perspective: 1200px;
+        }
+
+        .card {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transform-style: preserve-3d;
+            animation: floating 3s ease-in-out infinite;
+            cursor: grab;
+            transition: transform 0.1s ease-out;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        .card:active {
+            cursor: grabbing;
+        }
+
+        @keyframes floating {
+            0%, 100% { transform: translateY(0px) rotateX(8deg) rotateY(-15deg) rotateZ(2deg); }
+            50% { transform: translateY(-20px) rotateX(5deg) rotateY(15deg) rotateZ(-2deg); }
+        }
+
+        .card.dragging {
+            animation: none;
+        }
+
+        .card-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 20px;
+        }
+
+        /* Front of card - Style 1 */
+        .card-front {
+            background:
+                linear-gradient(145deg, #1a1a2e 0%, #16213e 50%, #0f0f23 100%) padding-box,
+                var(--card-color, linear-gradient(145deg, #2a2a2a, #1a1a1a, #2a2a2a, #1a1a1a, #2a2a2a)) border-box;
+            border-radius: 20px;
+            border: 5px solid transparent;
+            box-shadow:
+                0 0 40px rgba(0, 0, 0, 0.4),
+                0 0 80px rgba(0, 0, 0, 0.3),
+                inset 0 0 60px rgba(0, 0, 0, 0.5);
+            z-index: 1;
+        }
+
+        .card-front::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 15px;
+            background: linear-gradient(
+                125deg,
+                transparent 0%,
+                transparent 25%,
+                rgba(255, 255, 255, 0.1) 35%,
+                rgba(255, 255, 255, 0.3) 45%,
+                rgba(255, 255, 255, 0.5) 50%,
+                rgba(255, 255, 255, 0.3) 55%,
+                rgba(255, 255, 255, 0.1) 65%,
+                transparent 75%,
+                transparent 100%
+            );
+            background-size: 250% 250%;
+            animation: metallicShine 3s ease-in-out infinite;
+            pointer-events: none;
+        }
+
+        @keyframes metallicShine {
+            0% { background-position: 200% 0%; opacity: 0; }
+            15% { opacity: 1; }
+            85% { opacity: 1; }
+            100% { background-position: -200% 0%; opacity: 0; }
+        }
+
+        .card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            z-index: 2;
+        }
+
+        /* Holographic overlay */
+        .holographic {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                125deg,
+                transparent 0%,
+                rgba(255, 255, 255, 0.1) 25%,
+                transparent 50%,
+                rgba(255, 255, 255, 0.05) 75%,
+                transparent 100%
+            );
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        /* Position badge (top left, styled like old rating badge) */
+        .position-badge {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            width: 70px;
+            height: 70px;
+            background: linear-gradient(145deg, #2a2a2a, #1a1a1a);
+            border-radius: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.5);
+            z-index: 10;
+            font-family: 'Orbitron', monospace;
+            font-size: 28px;
+            font-weight: 900;
+            color: #fff;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+        }
+
+        /* Player image */
+        .player-image-container {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            margin-top: 0;
+            position: relative;
+        }
+
+        .player-image {
+            width: 330px;
+            height: 380px;
+            object-fit: cover;
+            object-position: top;
+            border-radius: 10px;
+            filter: drop-shadow(0 10px 30px rgba(0, 0, 0, 0.5));
+        }
+
+        .player-image-placeholder {
+            width: 330px;
+            height: 380px;
+            background: linear-gradient(145deg, #2a2a4a, #1a1a3a);
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 16px;
+            border: 2px dashed rgba(255, 255, 255, 0.2);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .player-image-placeholder:hover {
+            border-color: rgba(255, 107, 0, 0.5);
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .player-image-placeholder svg {
+            width: 60px;
+            height: 60px;
+            margin-bottom: 10px;
+            opacity: 0.3;
+        }
+
+        /* Player info */
+        .player-info {
+            padding: 15px 0;
+            text-align: center;
+        }
+
+        .player-name {
+            font-family: 'Orbitron', monospace;
+            font-size: 26px;
+            font-weight: 900;
+            color: #fff;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 0 0 20px rgba(255, 107, 0, 0.5);
+            margin-bottom: 5px;
+        }
+
+        .player-team {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.5);
+            text-transform: uppercase;
+            letter-spacing: 3px;
+        }
+
+        /* Stats grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            padding: 12px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-family: 'Orbitron', monospace;
+            font-size: 18px;
+            font-weight: 700;
+            color: #00d4ff;
+            text-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+        }
+
+        .stat-label {
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.5);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Player quote */
+        .player-quote {
+            margin-top: -10px;
+            padding: 5px 15px;
+            text-align: center;
+        }
+
+        .player-quote p {
+            font-size: 12px;
+            font-style: italic;
+            color: rgba(255, 255, 255, 0.7);
+            line-height: 1.4;
+            margin: 0;
+        }
+
+        /* Hidden state for optional sections */
+        .stats-grid.hidden,
+        .player-quote.hidden {
+            display: none;
+        }
+
+        /* Classic style: adjust layout when stats/quote is hidden */
+        .card.style-1.no-stats .player-info {
+            padding-bottom: 25px;
+        }
+
+        /* Classic style with quote: image height 388px */
+        .card.style-1.show-quote .player-image,
+        .card.style-1.show-quote .player-image-placeholder {
+            height: 388px;
+        }
+
+        /* Classic style with none: image height 420px */
+        .card.style-1.show-none .player-image,
+        .card.style-1.show-none .player-image-placeholder {
+            height: 420px;
+        }
+
+        /* Classic style with none: adjust name/team positioning */
+        .card.style-1.show-none .player-info {
+            padding-top: 25px;
+        }
+
+        .card.style-1.show-none .player-name {
+            margin-bottom: 12px;
+        }
+
+        /* Classic style: texture overlay on top of image */
+        .card.style-1 .card-inner {
+            z-index: auto; /* Remove stacking context so textures can layer properly */
+        }
+
+        .card.style-1 .card-texture {
+            z-index: 3;
+        }
+
+        .card.style-1 .position-badge,
+        .card.style-1 .player-info,
+        .card.style-1 .stats-grid,
+        .card.style-1 .player-quote {
+            z-index: 10;
+        }
+
+        .card.style-1 .player-image-container {
+            z-index: 1;
+        }
+
+        /* Back of card */
+        .card-back {
+            background:
+                linear-gradient(145deg, #2a2a2a, #1a1a1a) padding-box,
+                var(--card-color, linear-gradient(145deg, #2a2a2a, #1a1a1a, #2a2a2a, #1a1a1a, #2a2a2a)) border-box;
+            transform: rotateY(180deg);
+            border-radius: 20px;
+            border: 5px solid transparent;
+            box-shadow:
+                0 0 40px rgba(0, 0, 0, 0.4),
+                0 0 80px rgba(0, 0, 0, 0.3);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+            z-index: 2;
+        }
+
+        .card-back::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(145deg, #2a2a2a, #1a1a1a);
+            border-radius: 20px;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .card-front * {
+            backface-visibility: hidden;
+        }
+
+        .card-back-content {
+            padding: 35px 25px;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card-back-logo {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 40px;
+            position: relative;
+            z-index: 2;
+            background: linear-gradient(145deg, #2a2a2a, #1a1a1a);
+            border-radius: 15px;
+        }
+
+        .card-back-logo img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            transition: filter 0.5s ease;
+        }
+
+        /* Gold texture effect on card back */
+        .card-back.gold-texture-active {
+            background:
+                linear-gradient(145deg, #3d2e0a 0%, #5c4a1a 50%, #2a1f05 100%) padding-box,
+                linear-gradient(145deg, #ffd700, #ffec8b, #ffd700, #b8860b, #ffd700) border-box !important;
+            box-shadow:
+                0 0 40px rgba(255, 215, 0, 0.4),
+                0 0 80px rgba(255, 180, 0, 0.3);
+        }
+
+        .card-back.gold-texture-active .card-back-logo {
+            background: linear-gradient(145deg, #3d2e0a, #2a1f05);
+        }
+
+        .card-back.gold-texture-active .card-back-logo img {
+            filter: sepia(100%) saturate(300%) brightness(1.1) hue-rotate(10deg) drop-shadow(0 0 20px rgba(255, 215, 0, 0.6)) drop-shadow(0 0 40px rgba(255, 180, 0, 0.4));
+        }
+
+        .back-title {
+            font-family: 'Orbitron', monospace;
+            font-size: 18px;
+            color: #00d4ff;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        .detailed-stats {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .detailed-stat {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .detailed-stat-label {
+            width: 90px;
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.6);
+            text-transform: uppercase;
+        }
+
+        .stat-bar-container {
+            flex: 1;
+            height: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
+            overflow: hidden;
+        }
+
+        .stat-bar {
+            height: 100%;
+            border-radius: 5px;
+            transition: width 0.5s ease;
+        }
+
+        .stat-bar.high { background: linear-gradient(90deg, #00ff88, #00d4ff); }
+        .stat-bar.medium { background: linear-gradient(90deg, #ffaa00, #ff6b00); }
+        .stat-bar.low { background: linear-gradient(90deg, #ff0044, #ff6b00); }
+
+        .detailed-stat-value {
+            width: 35px;
+            font-family: 'Orbitron', monospace;
+            font-size: 15px;
+            color: #fff;
+            text-align: right;
+        }
+
+        /* ============== STYLE 3 - Full Image ============== */
+        .card.style-3 .card-inner {
+            padding: 0;
+            position: relative;
+        }
+
+        .card.style-3 .player-image-container {
+            position: absolute;
+            inset: 0;
+            margin: 0;
+            z-index: 0;
+        }
+
+        .card.style-3 .player-image,
+        .card.style-3 .player-image-placeholder {
+            width: 100%;
+            height: 100%;
+            border-radius: 15px;
+            object-fit: cover;
+        }
+
+        .card.style-3 .position-badge {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 10;
+        }
+
+        .card.style-3 .card-inner::before {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 50%;
+            background: linear-gradient(to top, rgba(0, 0, 0, 0.95) 0%, rgba(0, 0, 0, 0.7) 40%, transparent 100%);
+            z-index: 5;
+            pointer-events: none;
+            border-radius: 0 0 15px 15px;
+        }
+
+        .card.style-3 .player-info {
+            position: absolute;
+            bottom: 80px;
+            left: 0;
+            right: 0;
+            z-index: 10;
+            background: none;
+            padding: 30px 20px 20px;
+        }
+
+        .card.style-3 .stats-grid {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            right: 20px;
+            z-index: 10;
+            background: none;
+        }
+
+        .card.style-3 .player-quote {
+            position: absolute;
+            bottom: 60px;
+            left: 0;
+            right: 0;
+            z-index: 10;
+        }
+
+        /* For full image mode: image < texture < UI elements */
+        .card.style-3 .card-inner {
+            z-index: auto; /* Remove stacking context so children can layer with siblings */
+        }
+
+        .card.style-3 .player-image-container {
+            z-index: 1;
+        }
+
+        .card.style-3 .card-texture {
+            z-index: 2;
+        }
+
+        .card.style-3 .card-inner::before {
+            z-index: 3; /* Dark gradient above texture */
+        }
+
+        .card.style-3 .position-badge,
+        .card.style-3 .player-info,
+        .card.style-3 .stats-grid {
+            z-index: 10;
+        }
+
+        /* ============== OVERLAYS ============== */
+        .card-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border-radius: 15px;
+            pointer-events: none;
+            z-index: 50;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+            overflow: hidden;
+        }
+
+        .card-overlay.active {
+            opacity: 1;
+        }
+
+        /* Anime image overlay */
+        .overlay-anime {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .anime-image {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            pointer-events: none;
+        }
+
+        /* Signature overlay */
+        .overlay-signature {
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            padding-bottom: 60px;
+        }
+
+        .signature-text {
+            font-family: 'Dancing Script', cursive;
+            font-size: 42px;
+            color: rgba(255, 255, 255, 0.8);
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            transform: rotate(-5deg);
+        }
+
+        /* Classic style: signature under name, above height/weight */
+        .card.style-1 .overlay-signature {
+            display: block;
+            padding: 0;
+        }
+
+        .card.style-1 .overlay-signature .signature-text {
+            position: absolute;
+            top: 295px;
+            left: 50%;
+            transform: translateX(-50%) rotate(-5deg);
+            font-size: 32px;
+        }
+
+        /* Classic style without stats: signature moves down since more space */
+        .card.style-1.no-stats .overlay-signature .signature-text {
+            top: 320px;
+        }
+
+        /* Full image style: signature above name */
+        .card.style-3 .overlay-signature {
+            display: block;
+            padding: 0;
+        }
+
+        .card.style-3 .overlay-signature .signature-text {
+            position: absolute;
+            bottom: 190px;
+            left: 50%;
+            transform: translateX(-50%) rotate(-5deg);
+            font-size: 36px;
+        }
+
+        /* Butterflies overlay */
+        .overlay-butterflies {
+            overflow: hidden;
+        }
+
+        .butterfly {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            animation: butterflyFly 8s ease-in-out infinite;
+        }
+
+        .butterfly::before,
+        .butterfly::after {
+            content: '';
+            position: absolute;
+            width: 15px;
+            height: 20px;
+            background: linear-gradient(135deg, #ff69b4, #da70d6, #9370db);
+            border-radius: 50% 50% 50% 0;
+            animation: wingFlap 0.3s ease-in-out infinite alternate;
+        }
+
+        .butterfly::before {
+            left: 0;
+            transform-origin: right center;
+        }
+
+        .butterfly::after {
+            right: 0;
+            transform: scaleX(-1);
+            transform-origin: left center;
+            animation-delay: 0.15s;
+        }
+
+        @keyframes wingFlap {
+            0% { transform: rotateY(0deg); }
+            100% { transform: rotateY(60deg); }
+        }
+
+        .butterfly:nth-child(1) { top: 10%; left: 10%; animation-delay: 0s; }
+        .butterfly:nth-child(2) { top: 20%; right: 15%; animation-delay: 2s; }
+        .butterfly:nth-child(3) { top: 50%; left: 5%; animation-delay: 4s; }
+        .butterfly:nth-child(4) { bottom: 30%; right: 10%; animation-delay: 6s; }
+
+        @keyframes butterflyFly {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            25% { transform: translate(20px, -30px) rotate(10deg); }
+            50% { transform: translate(40px, 0) rotate(-5deg); }
+            75% { transform: translate(20px, 20px) rotate(5deg); }
+        }
+
+        /* Stars video overlay */
+        .overlay-stars {
+            overflow: hidden;
+        }
+
+        .stars-video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            mix-blend-mode: darken;
+            pointer-events: none;
+        }
+
+        /* Ice frame overlay */
+        .ice-frame-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 100;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+            border-radius: 20px;
+            overflow: hidden;
+        }
+
+        .ice-frame-overlay.active {
+            opacity: 1;
+        }
+
+        .ice-frame-overlay img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transform: scale(1.15); /* ZOOM CONTROL - increase to zoom in more */
+        }
+
+        /* ============== CARD TEXTURES ============== */
+        .card-texture {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border-radius: 15px;
+            pointer-events: none;
+            z-index: 1;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+
+        .card-texture.active {
+            opacity: 1;
+        }
+
+        .texture-metallic {
+            background: url('images/metallictexture1.png');
+            background-size: cover;
+            background-position: center;
+            mix-blend-mode: hard-light;
+            overflow: hidden;
+            -webkit-mask-image: radial-gradient(ellipse at center, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.4) 25%, rgba(0,0,0,0.5) 50%, rgba(0, 0, 0, 0.6) 80%);
+            mask-image: radial-gradient(ellipse at center, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.3) 25%, rgba(0,0,0,0.45) 50%, rgba(0, 0, 0, 0.6) 80%);
+        }
+
+        .texture-gold {
+            background:
+                repeating-linear-gradient(
+                    45deg,
+                    transparent 0px,
+                    rgba(255, 215, 0, 0.02) 1px,
+                    rgba(255, 215, 0, 0.1) 3px,
+                    rgba(255, 215, 0, 0.02) 5px,
+                    transparent 6px
+                ),
+                radial-gradient(ellipse at 30% 20%, rgba(255, 223, 100, 0.2) 0%, rgba(255, 223, 100, 0.1) 25%, transparent 50%),
+                radial-gradient(ellipse at 70% 80%, rgba(218, 165, 32, 0.15) 0%, rgba(218, 165, 32, 0.08) 25%, transparent 50%),
+                linear-gradient(
+                    135deg,
+                    rgba(255, 215, 0, 0) 0%,
+                    rgba(255, 215, 0, 0.08) 20%,
+                    rgba(255, 223, 100, 0.2) 30%,
+                    rgba(255, 223, 100, 0.2) 35%,
+                    rgba(255, 215, 0, 0.08) 45%,
+                    rgba(255, 215, 0, 0) 50%,
+                    rgba(218, 165, 32, 0.08) 60%,
+                    rgba(218, 165, 32, 0.18) 70%,
+                    rgba(218, 165, 32, 0.08) 80%,
+                    rgba(255, 215, 0, 0) 100%
+                ),
+                linear-gradient(to bottom, rgba(255, 215, 0, 0.5), rgba(218, 165, 32, 0.5));
+            mix-blend-mode: hard-light;
+        }
+
+        /* Darken text when gold texture is active */
+        .card-front:has(.texture-gold.active) .player-name,
+        .card-front:has(.texture-gold.active) .player-quote,
+        .card-front:has(.texture-gold.active) .stat-label,
+        .card-front:has(.texture-gold.active) .stat-value,
+        .card-front:has(.texture-gold.active) .detailed-stat-label,
+        .card-front:has(.texture-gold.active) .detailed-stat-value,
+        .card-front:has(.texture-gold.active) .position-badge {
+            color: #ffc527;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+        }
+
+        .texture-crystal {
+            background-image: url('images/crystaltexture.png');
+            background-size: 120%;
+            background-position: center;
+            mix-blend-mode: overlay; /* Default, will be updated dynamically */
+            overflow: hidden;
+            -webkit-mask-image: radial-gradient(ellipse at center, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.4) 30%, rgba(0,0,0,0.5) 50%, rgba(0, 0, 0, 0.6) 80%);
+            mask-image: radial-gradient(ellipse at center, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.4) 30%, rgba(0,0,0,0.5) 50%, rgba(0, 0, 0, 0.6) 80%);
+        }
+
+        .texture-crystal.active {
+            opacity: 0.8;
+            animation: crystal-float 3s ease-in-out infinite;
+        }
+
+        /* Stop texture animation when card is being dragged/spun */
+        .card.dragging .texture-crystal.active {
+            animation: none;
+        }
+
+        @keyframes crystal-float {
+            0%, 100% { background-position: 47% 46%; }
+            50% { background-position: 53% 48%; }
+        }
+
+        /* Disable the card shine when any texture is active */
+        .card-front:has(.card-texture.active)::after {
+            animation: none;
+            opacity: 0;
+        }
+
+        /* Crystal sparkles container */
+        .crystal-sparkles-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 100;
+            opacity: 0;
+        }
+
+        .card-front:has(.texture-crystal.active) .crystal-sparkles-container {
+            opacity: 0.7;
+        }
+
+        /* Crystal sparkle points - uses CSS variables for randomness */
+        .crystal-sparkle {
+            position: absolute;
+            width: var(--sparkle-size, 50px);
+            height: var(--sparkle-size, 50px);
+            pointer-events: none;
+            border-radius: 50%;
+            background: radial-gradient(
+                circle at center,
+                rgba(255, 255, 255, 0.15) 20%,
+                rgba(255, 255, 255, 0.08) 30%,
+                rgba(200, 230, 255, 0.04) 50%,
+                transparent 70%
+            );
+            opacity: 0;
+        }
+
+        .card-front:has(.texture-crystal.active) .crystal-sparkle {
+            animation: sparkle-flash var(--sparkle-duration, 2s) ease-in-out infinite;
+            animation-delay: var(--sparkle-delay, 0s);
+        }
+
+        /* Bright center point - ADJUST BRIGHTNESS HERE */
+        .crystal-sparkle::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 1px;
+            height: 1px;
+            background: white;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow:
+                0 0 1px 1px rgba(255, 255, 255, 0.689),
+                0 0 3px 2px rgba(255, 255, 255, 0.666),
+                0 0 6px 3px rgba(255, 255, 255, 0.4),
+                0 0 10px 5px rgba(255, 255, 255, 0.15);
+        }
+
+        @keyframes sparkle-flash {
+            0%, 100% { opacity: 0; transform: scale(0.5); }
+            50% { opacity: 1; transform: scale(1); }
+        }
+
+        /* Controls */
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 25px;
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            width: 380px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .control-row {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .control-label {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.5);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Checkbox styling */
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            accent-color: #00d4ff;
+            cursor: pointer;
+        }
+
+        .checkbox-group label {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.7);
+            cursor: pointer;
+            user-select: none;
+        }
+
+        /* Radio button styling for classic mode options */
+        .radio-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+        }
+
+        .radio-group input[type="radio"] {
+            width: 16px;
+            height: 16px;
+            accent-color: #00d4ff;
+            cursor: pointer;
+        }
+
+        .radio-group label {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.7);
+            cursor: pointer;
+            user-select: none;
+        }
+
+        /* Color picker styles */
+        .color-options {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        /* Frame options with labels */
+        .frame-options {
+            display: flex;
+            gap: 15px;
+            align-items: flex-start;
+            flex-wrap: wrap;
+        }
+
+        .frame-option {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+            cursor: pointer;
+        }
+
+        .frame-label {
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.7);
+            text-align: center;
+            white-space: nowrap;
+        }
+
+        .color-btn {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .color-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .color-btn.active {
+            border-color: #fff;
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.5);
+        }
+
+        .color-btn.gold {
+            background: linear-gradient(145deg, #ffd700, #ffec8b, #b8860b);
+        }
+
+        .color-btn.silver {
+            background: linear-gradient(145deg, #c0c0c0, #e8e8e8, #808080);
+        }
+
+        .color-btn.bronze {
+            background: linear-gradient(145deg, #cd7f32, #e8a862, #8b4513);
+        }
+
+        .color-btn.platinum {
+            background: linear-gradient(145deg, #e5e4e2, #ffffff, #a9a9a9);
+        }
+
+        .color-btn.rose-gold {
+            background: linear-gradient(145deg, #b76e79, #ecc5c0, #8b4557);
+        }
+
+        .color-btn.obsidian {
+            background: linear-gradient(145deg, #0d0d0d, #434343, #1a1a1a);
+        }
+
+        .color-btn.ice {
+            background: linear-gradient(145deg, #e0f7ff, #ffffff, #b8e8f5);
+        }
+
+        .color-btn.edge-none {
+            background: linear-gradient(145deg, #2a2a2a, #1a1a1a);
+        }
+
+        /* Name color buttons */
+        .color-btn.name-color-white {
+            background: #ffffff;
+        }
+
+        .color-btn.name-color-orange {
+            background: linear-gradient(145deg, #ff6b00, #ff8c00);
+        }
+
+        .color-btn.name-color-blue {
+            background: linear-gradient(145deg, #00b4ff, #0088cc);
+        }
+
+        .color-btn.name-color-red {
+            background: linear-gradient(145deg, #ff3333, #cc0000);
+        }
+
+        .color-btn.name-color-green {
+            background: linear-gradient(145deg, #00cc66, #00994d);
+        }
+
+        .color-btn.name-color-purple {
+            background: linear-gradient(145deg, #9933ff, #6600cc);
+        }
+
+        .color-btn.name-color-gold {
+            background: linear-gradient(145deg, #ffd700, #b8860b);
+        }
+
+        /* Background color buttons */
+        .color-btn.bg-dark {
+            background: linear-gradient(145deg, #1a1a2e, #16213e, #0f0f23);
+        }
+
+        .color-btn.bg-navy {
+            background: linear-gradient(145deg, #0a1628, #1a3a5c, #0d2137);
+        }
+
+        .color-btn.bg-purple {
+            background: linear-gradient(145deg, #2d1b4e, #4a2c7a, #1f1035);
+        }
+
+        .color-btn.bg-red {
+            background: linear-gradient(145deg, #3d1a1a, #5c2a2a, #2a0f0f);
+        }
+
+        .color-btn.bg-green {
+            background: linear-gradient(145deg, #1a2e1a, #2a4a2a, #0f230f);
+        }
+
+        .color-btn.bg-black {
+            background: linear-gradient(145deg, #0a0a0a, #1a1a1a, #050505);
+        }
+
+        /* Option button styles */
+        .option-btn {
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 11px;
+            color: #fff;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            background: linear-gradient(145deg, #1a1a2e, #16213e);
+        }
+
+        .option-btn:hover {
+            transform: scale(1.05);
+        }
+
+        .option-btn.active {
+            border-color: #fff;
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.5);
+        }
+
+        input[type="text"], input[type="number"] {
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            padding: 10px 15px;
+            color: #fff;
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 14px;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        input[type="text"]:focus, input[type="number"]:focus {
+            border-color: #ff6b00;
+            box-shadow: 0 0 15px rgba(255, 107, 0, 0.3);
+        }
+
+        input[type="number"] {
+            width: 70px;
+        }
+
+        .upload-btn {
+            background: linear-gradient(145deg, #ff6b00, #ff0055);
+            border: none;
+            border-radius: 8px;
+            padding: 12px 25px;
+            color: #fff;
+            font-family: 'Orbitron', monospace;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 20px rgba(255, 107, 0, 0.3);
+        }
+
+        .upload-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(255, 107, 0, 0.5);
+        }
+
+        .flip-btn {
+            background: linear-gradient(145deg, #00d4ff, #0066ff);
+            border: none;
+            border-radius: 8px;
+            padding: 12px 25px;
+            color: #fff;
+            font-family: 'Orbitron', monospace;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 20px rgba(0, 212, 255, 0.3);
+        }
+
+        .flip-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(0, 212, 255, 0.5);
+        }
+
+        #imageInput {
+            display: none;
+        }
+
+        select {
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            padding: 10px 15px;
+            color: #fff;
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 14px;
+            outline: none;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        select:focus {
+            border-color: #ff6b00;
+            box-shadow: 0 0 15px rgba(255, 107, 0, 0.3);
+        }
+
+        select option {
+            background: #1a1a2e;
+            color: #fff;
+        }
+
+        .instructions {
+            text-align: center;
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 12px;
+            margin-top: 10px;
+        }
+
+        .section-title {
+            font-family: 'Orbitron', monospace;
+            font-size: 12px;
+            color: #00d4ff;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-top: 10px;
+            margin-bottom: 5px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid rgba(0, 212, 255, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-animation"></div>
+    <div class="particles" id="particles"></div>
+
+    <div class="container">
+        <div class="controls">
+            <div class="section-title">Player Info</div>
+            <div class="control-row">
+                <div class="control-group">
+                    <span class="control-label">Player Name</span>
+                    <input type="text" id="nameInput" placeholder="Enter name" value="YOUR NAME">
+                </div>
+                <div class="control-group">
+                    <span class="control-label">Team</span>
+                    <input type="text" id="teamInput" placeholder="Team" value="YOUR TEAM">
+                </div>
+            </div>
+            <div class="control-row">
+                <div class="control-group">
+                    <span class="control-label">Name Color</span>
+                    <div class="color-options">
+                        <div class="color-btn name-color-white active" data-name-color="white" onclick="setNameColor('white')"></div>
+                        <div class="color-btn name-color-orange" data-name-color="orange" onclick="setNameColor('orange')"></div>
+                        <div class="color-btn name-color-blue" data-name-color="blue" onclick="setNameColor('blue')"></div>
+                        <div class="color-btn name-color-red" data-name-color="red" onclick="setNameColor('red')"></div>
+                        <div class="color-btn name-color-green" data-name-color="green" onclick="setNameColor('green')"></div>
+                        <div class="color-btn name-color-purple" data-name-color="purple" onclick="setNameColor('purple')"></div>
+                        <div class="color-btn name-color-gold" data-name-color="gold" onclick="setNameColor('gold')"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="control-row" id="classicInfoOptions">
+                <span class="control-label">Show:</span>
+                <div class="radio-group">
+                    <input type="radio" id="showPlayerInfo" name="classicInfo" value="playerInfo">
+                    <label for="showPlayerInfo">Height & Weight</label>
+                </div>
+                <div class="radio-group">
+                    <input type="radio" id="showQuote" name="classicInfo" value="quote">
+                    <label for="showQuote">Quote</label>
+                </div>
+                <div class="radio-group">
+                    <input type="radio" id="showNone" name="classicInfo" value="none" checked>
+                    <label for="showNone">None</label>
+                </div>
+            </div>
+            <div class="control-row">
+                <div class="control-group">
+                    <span class="control-label">Position</span>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <select id="positionInput">
+                            <option value="PG" selected>PG</option>
+                            <option value="SG">SG</option>
+                            <option value="SF">SF</option>
+                            <option value="PF">PF</option>
+                            <option value="C">C</option>
+                        </select>
+                        <label style="display: flex; align-items: center; gap: 5px; font-size: 12px; color: rgba(255,255,255,0.7);">
+                            <input type="checkbox" id="showPositionToggle">
+                            Show
+                        </label>
+                    </div>
+                </div>
+                <div class="control-group" id="heightInputGroup" style="display: none;">
+                    <span class="control-label">Height</span>
+                    <input type="text" id="heightInput" placeholder="6'2&quot;" value="6'2&quot;" style="width: 70px;">
+                </div>
+                <div class="control-group" id="weightInputGroup" style="display: none;">
+                    <span class="control-label">Weight</span>
+                    <input type="number" id="weightInput" value="185" min="0" style="width: 70px;">
+                </div>
+            </div>
+            <div class="control-row" id="quoteInputRow" style="display: none;">
+                <div class="control-group" style="flex: 1;">
+                    <span class="control-label">Player Quote</span>
+                    <input type="text" id="quoteInput" placeholder="Enter your quote..." value="Hard work beats talent when talent doesn't work hard." style="width: 100%;">
+                </div>
+            </div>
+
+            <div class="section-title">1. Style</div>
+            <div class="control-row">
+                <div class="control-group">
+                    <span class="control-label">Layout</span>
+                    <div class="color-options">
+                        <div class="option-btn active" data-style="style-1" onclick="setCardStyle('style-1')">Classic</div>
+                        <div class="option-btn" data-style="style-3" onclick="setCardStyle('style-3')">Full Image</div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="frameSection">
+                <div class="section-title">2. Frame</div>
+                <div class="control-row">
+                    <div class="control-group">
+                        <div class="frame-options">
+                            <div class="frame-option" onclick="setCardColor('none')">
+                                <div class="color-btn edge-none active" data-color="none"></div>
+                                <span class="frame-label">Default</span>
+                            </div>
+                            <div class="frame-option" onclick="setCardColor('gold')">
+                                <div class="color-btn gold" data-color="gold"></div>
+                                <span class="frame-label">Gold</span>
+                            </div>
+                            <div class="frame-option" onclick="setCardColor('silver')">
+                                <div class="color-btn silver" data-color="silver"></div>
+                                <span class="frame-label">Silver</span>
+                            </div>
+                            <div class="frame-option" onclick="setCardColor('rose-gold')">
+                                <div class="color-btn rose-gold" data-color="rose-gold"></div>
+                                <span class="frame-label">Rose Gold</span>
+                            </div>
+                            <div class="frame-option" onclick="setCardColor('ice')">
+                                <div class="color-btn ice" data-color="ice"></div>
+                                <span class="frame-label">Ice</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="bgColorSection">
+                <div class="section-title">3. Card Background</div>
+                <div class="control-row">
+                    <div class="control-group">
+                        <span class="control-label">Color</span>
+                        <div class="color-options">
+                            <div class="color-btn bg-dark active" data-bg="dark" onclick="setCardBackground('dark')"></div>
+                            <div class="color-btn bg-navy" data-bg="navy" onclick="setCardBackground('navy')"></div>
+                            <div class="color-btn bg-purple" data-bg="purple" onclick="setCardBackground('purple')"></div>
+                            <div class="color-btn bg-red" data-bg="red" onclick="setCardBackground('red')"></div>
+                            <div class="color-btn bg-green" data-bg="green" onclick="setCardBackground('green')"></div>
+                            <div class="color-btn bg-black" data-bg="black" onclick="setCardBackground('black')"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section-title">4. Overlays</div>
+            <div class="control-row">
+                <div class="control-group">
+                    <span class="control-label">Decoration</span>
+                    <div class="color-options">
+                        <div class="option-btn active" data-overlay="none" onclick="setOverlay('none')">None</div>
+                        <div class="option-btn" data-overlay="anime" onclick="setOverlay('anime')">Anime</div>
+                        <div class="option-btn" data-overlay="signature" onclick="setOverlay('signature')">Signature</div>
+                        <div class="option-btn" data-overlay="butterflies" onclick="setOverlay('butterflies')">Butterflies</div>
+                        <div class="option-btn" data-overlay="stars" onclick="setOverlay('stars')">Stars</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section-title">5. Card Textures</div>
+            <div class="control-row">
+                <div class="control-group">
+                    <span class="control-label">Texture</span>
+                    <div class="color-options">
+                        <div class="option-btn active" data-texture="none" onclick="setCardTexture('none')">None</div>
+                        <div class="option-btn" data-texture="metallic" onclick="setCardTexture('metallic')">Metallic</div>
+                        <div class="option-btn" data-texture="gold" onclick="setCardTexture('gold')">Gold</div>
+                        <div class="option-btn" data-texture="crystal" onclick="setCardTexture('crystal')">Crystal</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section-title">Actions</div>
+            <div class="control-row">
+                <input type="file" id="imageInput" accept="image/*">
+                <button class="upload-btn" onclick="document.getElementById('imageInput').click()">Upload Photo</button>
+                <button class="flip-btn" onclick="flipCard()">Flip Card</button>
+            </div>
+            <div class="instructions">Click the card to spin it, or drag to rotate manually</div>
+        </div>
+
+        <div class="card-scene">
+            <div class="card style-1 no-stats show-none" id="card">
+                <!-- Front -->
+                <div class="card-face card-front">
+                    <div class="holographic"></div>
+                    <!-- Textures -->
+                    <div class="card-texture texture-metallic" id="textureFrontMetallic"></div>
+                    <div class="card-texture texture-gold" id="textureFrontGold"></div>
+                    <div class="card-texture texture-crystal" id="textureFrontCrystal"></div>
+                    <!-- Crystal sparkles (separate from texture so not affected by opacity) -->
+                    <div class="crystal-sparkles-container" id="crystalSparkles">
+                        <div class="crystal-sparkle" style="top: 15%; left: 20%; --sparkle-size: 80px; --sparkle-delay: 0.2s; --sparkle-duration: 4.2s;"></div>
+                        <div class="crystal-sparkle" style="top: 30%; left: 75%; --sparkle-size: 110px; --sparkle-delay: 1.8s; --sparkle-duration: 3.8s;"></div>
+                        <div class="crystal-sparkle" style="top: 55%; left: 12%; --sparkle-size: 90px; --sparkle-delay: 0.9s; --sparkle-duration: 4.5s;"></div>
+                        <div class="crystal-sparkle" style="top: 70%; left: 65%; --sparkle-size: 100px; --sparkle-delay: 2.5s; --sparkle-duration: 3.5s;"></div>
+                        <div class="crystal-sparkle" style="top: 85%; left: 35%; --sparkle-size: 70px; --sparkle-delay: 1.2s; --sparkle-duration: 5.0s;"></div>
+                        <div class="crystal-sparkle" style="top: 42%; left: 50%; --sparkle-size: 95px; --sparkle-delay: 3.0s; --sparkle-duration: 4.0s;"></div>
+                    </div>
+                    <!-- Overlays -->
+                    <div class="card-overlay overlay-anime" id="overlayFrontAnime">
+                        <img src="images/anime_text_jojo.png" class="anime-image" alt="Anime overlay">
+                    </div>
+                    <div class="card-overlay overlay-signature" id="overlayFrontSignature">
+                        <span class="signature-text" id="signatureText">Your Name</span>
+                    </div>
+                    <div class="card-overlay overlay-butterflies" id="overlayFrontButterflies">
+                        <div class="butterfly"></div>
+                        <div class="butterfly"></div>
+                        <div class="butterfly"></div>
+                        <div class="butterfly"></div>
+                    </div>
+                    <div class="card-overlay overlay-stars" id="overlayFrontStars">
+                        <video class="stars-video" autoplay muted loop playsinline>
+                            <source src="images/stars_video_1.mp4" type="video/mp4">
+                        </video>
+                    </div>
+                    <!-- Ice frame overlay -->
+                    <div class="ice-frame-overlay" id="iceFrameOverlay">
+                        <img src="images/iceframe.png" alt="Ice frame">
+                    </div>
+                    <div class="card-inner">
+                        <div class="position-badge" id="positionDisplay" style="display: none;">PG</div>
+
+                        <div class="player-image-container">
+                            <div class="player-image-placeholder" id="imagePlaceholder" onclick="document.getElementById('imageInput').click()">
+                                <svg viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+                                </svg>
+                                <span>Click to upload</span>
+                            </div>
+                            <img class="player-image" id="playerImage" style="display: none;">
+                        </div>
+
+                        <div class="player-info">
+                            <div class="player-name" id="nameDisplay">YOUR NAME</div>
+                            <div class="player-team" id="teamDisplay">YOUR TEAM</div>
+                        </div>
+
+                        <div class="stats-grid hidden">
+                            <div class="stat-item">
+                                <div class="stat-value" id="heightDisplay">6'2"</div>
+                                <div class="stat-label">Height</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value" id="weightDisplay">185</div>
+                                <div class="stat-label">Weight</div>
+                            </div>
+                        </div>
+
+                        <div class="player-quote hidden">
+                            <p>"<span id="quoteDisplay">Hard work beats talent when talent doesn't work hard.</span>"</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Back -->
+                <div class="card-face card-back">
+                    <div class="card-back-logo">
+                        <img src="images/logowhite1-01.png" alt="Logo">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Create particles
+        const particlesContainer = document.getElementById('particles');
+        for (let i = 0; i < 50; i++) {
+            const particle = document.createElement('div');
+            particle.className = 'particle';
+            particle.style.left = Math.random() * 100 + '%';
+            particle.style.animationDelay = Math.random() * 15 + 's';
+            particle.style.animationDuration = (10 + Math.random() * 10) + 's';
+            particlesContainer.appendChild(particle);
+        }
+
+        // Card interaction
+        const card = document.getElementById('card');
+        let isDragging = false;
+        let startX, startY;
+        let currentRotateX = 8;
+        let currentRotateY = -15;
+        let isFlipped = false;
+        let isSpinning = false;
+        let currentStyle = 'style-1';
+        let currentTexture = 'none';
+
+        // Update crystal texture position based on card rotation
+        function updateCrystalTexture() {
+            const crystalTexture = document.getElementById('textureFrontCrystal');
+            if (crystalTexture) {
+                // Map rotation to background position (center is 50%, range ±30%)
+                const posX = 50 + (currentRotateY % 360) * 0.15;
+                const posY = 50 - currentRotateX * 0.5;
+                crystalTexture.style.backgroundPosition = `${posX}% ${posY}%`;
+            }
+        }
+
+        // Click to spin
+        card.addEventListener('click', (e) => {
+            if (isDragging || isSpinning) return;
+            spinCard();
+        });
+
+        function spinCard() {
+            isSpinning = true;
+            card.classList.add('dragging');
+
+            const startRotateY = currentRotateY;
+            const totalRotation = 1080;
+            const duration = 1500;
+            const startTime = performance.now();
+
+            function animate(currentTime) {
+                const elapsed = currentTime - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                const easeOut = 1 - Math.pow(1 - progress, 3);
+
+                currentRotateY = startRotateY + (totalRotation * easeOut);
+                card.style.transform = `rotateX(${currentRotateX}deg) rotateY(${currentRotateY}deg)`;
+                updateCrystalTexture();
+
+                if (progress < 1) {
+                    requestAnimationFrame(animate);
+                } else {
+                    currentRotateY = -15;
+                    currentRotateX = 8;
+                    isFlipped = false;
+                    card.style.transform = `rotateX(${currentRotateX}deg) rotateY(${currentRotateY}deg)`;
+                    updateCrystalTexture();
+                    card.classList.remove('dragging');
+                    isSpinning = false;
+                }
+            }
+
+            requestAnimationFrame(animate);
+        }
+
+        card.addEventListener('mousedown', (e) => {
+            if (isSpinning) return;
+            isDragging = true;
+            card.classList.add('dragging');
+            startX = e.clientX;
+            startY = e.clientY;
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isDragging || isSpinning) return;
+
+            const deltaX = e.clientX - startX;
+            const deltaY = e.clientY - startY;
+
+            currentRotateY += deltaX * 0.5;
+            currentRotateX -= deltaY * 0.5;
+
+            card.style.transform = `rotateX(${currentRotateX}deg) rotateY(${currentRotateY}deg)`;
+            updateCrystalTexture();
+
+            startX = e.clientX;
+            startY = e.clientY;
+        });
+
+        document.addEventListener('mouseup', () => {
+            isDragging = false;
+            if (!isSpinning) {
+                card.classList.remove('dragging');
+            }
+        });
+
+        // Flip card function
+        function flipCard() {
+            isFlipped = !isFlipped;
+            if (isFlipped) {
+                currentRotateY = 180;
+            } else {
+                currentRotateY = 0;
+            }
+            card.style.transform = `rotateX(${currentRotateX}deg) rotateY(${currentRotateY}deg)`;
+            updateCrystalTexture();
+        }
+
+        // Brightness detection for crystal texture
+        let imageBrightness = 0.6; // Default to medium brightness
+        const BRIGHTNESS_THRESHOLD = 0.8; // Below this = dark image, use screen mode
+        const SCREEN_MODE_OPACITY = 0.4; // Opacity for screen mode (dark images) - adjust this to make it darker/lighter
+        const OVERLAY_MODE_OPACITY = 0.8; // Opacity for overlay mode (light images)
+
+        function calculateImageBrightness(imageSrc, callback) {
+            const img = new Image();
+            img.crossOrigin = 'anonymous';
+            img.onload = function() {
+                // Create offscreen canvas (scaled down for performance)
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                const scale = 0.1; // Scale down to 10% for faster processing
+                canvas.width = img.width * scale;
+                canvas.height = img.height * scale;
+                
+                // Draw and sample pixels
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                const data = imageData.data;
+                
+                // Calculate average luminance
+                let totalLuminance = 0;
+                let pixelCount = 0;
+                
+                for (let i = 0; i < data.length; i += 4) {
+                    const r = data[i];
+                    const g = data[i + 1];
+                    const b = data[i + 2];
+                    // Calculate luminance using relative luminance formula
+                    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+                    totalLuminance += luminance;
+                    pixelCount++;
+                }
+                
+                const avgBrightness = totalLuminance / pixelCount;
+                callback(avgBrightness);
+            };
+            img.src = imageSrc;
+        }
+
+        function updateCrystalBlendMode(brightness) {
+            imageBrightness = brightness;
+            const crystalTexture = document.getElementById('textureFrontCrystal');
+            const crystalBackTexture = document.getElementById('textureBackCrystal');
+            
+            if (crystalTexture) {
+                if (brightness < BRIGHTNESS_THRESHOLD) {
+                    // Dark image - use screen blend mode with lower opacity
+                    crystalTexture.style.mixBlendMode = 'screen';
+                    crystalTexture.style.opacity = SCREEN_MODE_OPACITY.toString();
+                    if (crystalTexture.querySelector('::before')) {
+                        crystalTexture.style.setProperty('--crystal-blend', 'screen');
+                    }
+                } else {
+                    // Light image - use overlay blend mode with normal opacity
+                    crystalTexture.style.mixBlendMode = 'overlay';
+                    crystalTexture.style.opacity = OVERLAY_MODE_OPACITY.toString();
+                    if (crystalTexture.querySelector('::before')) {
+                        crystalTexture.style.setProperty('--crystal-blend', 'overlay');
+                    }
+                }
+            }
+            
+            if (crystalBackTexture) {
+                if (brightness < BRIGHTNESS_THRESHOLD) {
+                    crystalBackTexture.style.mixBlendMode = 'screen';
+                } else {
+                    crystalBackTexture.style.mixBlendMode = 'overlay';
+                    crystalBackTexture.style.opacity = OVERLAY_MODE_OPACITY.toString();
+                }
+            }
+        }
+
+        // Image upload
+        document.getElementById('imageInput').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const img = document.getElementById('playerImage');
+                    const placeholder = document.getElementById('imagePlaceholder');
+                    img.src = event.target.result;
+                    img.style.display = 'block';
+                    placeholder.style.display = 'none';
+                    
+                    // Detect brightness and update crystal texture blend mode only if crystal texture is already active
+                    if (currentTexture === 'crystal') {
+                        calculateImageBrightness(event.target.result, (brightness) => {
+                            updateCrystalBlendMode(brightness);
+                        });
+                    }
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Input handlers
+        document.getElementById('nameInput').addEventListener('input', (e) => {
+            const name = e.target.value.toUpperCase() || 'YOUR NAME';
+            document.getElementById('nameDisplay').textContent = name;
+            document.getElementById('signatureText').textContent = e.target.value || 'Your Name';
+        });
+
+        document.getElementById('teamInput').addEventListener('input', (e) => {
+            document.getElementById('teamDisplay').textContent = e.target.value.toUpperCase() || 'YOUR TEAM';
+        });
+
+        document.getElementById('positionInput').addEventListener('change', (e) => {
+            document.getElementById('positionDisplay').textContent = e.target.value;
+        });
+
+        document.getElementById('showPositionToggle').addEventListener('change', (e) => {
+            document.getElementById('positionDisplay').style.display = e.target.checked ? '' : 'none';
+        });
+
+        document.getElementById('heightInput').addEventListener('input', (e) => {
+            document.getElementById('heightDisplay').textContent = e.target.value || "6'0\"";
+        });
+
+        document.getElementById('weightInput').addEventListener('input', (e) => {
+            document.getElementById('weightDisplay').textContent = e.target.value || '0';
+        });
+
+        document.getElementById('quoteInput').addEventListener('input', (e) => {
+            document.getElementById('quoteDisplay').textContent = e.target.value || 'Your quote here...';
+        });
+
+        // Radio button handlers for classic mode options (show one of: Player Info, Quote, or None)
+        function updateClassicInfoDisplay() {
+            const statsGrid = document.querySelector('.stats-grid');
+            const quote = document.querySelector('.player-quote');
+            const card = document.querySelector('.card');
+            const selected = document.querySelector('input[name="classicInfo"]:checked').value;
+
+            // Control panel input elements
+            const heightInputGroup = document.getElementById('heightInputGroup');
+            const weightInputGroup = document.getElementById('weightInputGroup');
+            const quoteInputRow = document.getElementById('quoteInputRow');
+
+            // Remove all state classes first
+            card.classList.remove('no-stats', 'show-quote', 'show-none');
+
+            if (selected === 'playerInfo') {
+                // Show height & weight, hide quote (default 380px image)
+                statsGrid.classList.remove('hidden');
+                quote.classList.add('hidden');
+                // Show height/weight inputs, hide quote input
+                heightInputGroup.style.display = '';
+                weightInputGroup.style.display = '';
+                quoteInputRow.style.display = 'none';
+            } else if (selected === 'quote') {
+                // Show quote, hide height & weight (388px image)
+                statsGrid.classList.add('hidden');
+                quote.classList.remove('hidden');
+                card.classList.add('no-stats', 'show-quote');
+                // Hide height/weight inputs, show quote input
+                heightInputGroup.style.display = 'none';
+                weightInputGroup.style.display = 'none';
+                quoteInputRow.style.display = '';
+            } else {
+                // None - hide both (420px image)
+                statsGrid.classList.add('hidden');
+                quote.classList.add('hidden');
+                card.classList.add('no-stats', 'show-none');
+                // Hide all inputs
+                heightInputGroup.style.display = 'none';
+                weightInputGroup.style.display = 'none';
+                quoteInputRow.style.display = 'none';
+            }
+        }
+
+        document.getElementById('showPlayerInfo').addEventListener('change', updateClassicInfoDisplay);
+        document.getElementById('showQuote').addEventListener('change', updateClassicInfoDisplay);
+        document.getElementById('showNone').addEventListener('change', updateClassicInfoDisplay);
+
+        // 1. Style options
+        function setCardStyle(style) {
+            document.querySelectorAll('.option-btn[data-style]').forEach(btn => btn.classList.remove('active'));
+            document.querySelector(`.option-btn[data-style="${style}"]`).classList.add('active');
+
+            // Remove all style classes
+            card.classList.remove('style-1', 'style-3');
+
+            // Add the selected style class
+            card.classList.add(style);
+            currentStyle = style;
+
+            // Hide/show frame and background color options based on texture
+            const frameSection = document.getElementById('frameSection');
+            const bgSection = document.getElementById('bgColorSection');
+            const isGoldTexture = currentTexture === 'gold';
+
+            // Frame is available for all styles, hide only for gold texture
+            frameSection.style.display = isGoldTexture ? 'none' : 'block';
+            // Background hidden for full image mode or gold texture
+            bgSection.style.display = (style === 'style-3' || isGoldTexture) ? 'none' : 'block';
+
+            // Re-apply current frame color (this handles the dark gray background for style-3)
+            if (!isGoldTexture) {
+                setCardColor(currentFrameColor);
+            }
+        }
+
+        // 2. Card color options
+        const colorGradients = {
+            'none': 'linear-gradient(145deg, #2a2a2a, #1a1a1a, #2a2a2a, #1a1a1a, #2a2a2a)',
+            'gold': 'linear-gradient(145deg, #ffd700, #ffec8b, #ffd700, #b8860b, #ffd700)',
+            'silver': 'linear-gradient(145deg, #c0c0c0, #e8e8e8, #c0c0c0, #808080, #c0c0c0)',
+            'bronze': 'linear-gradient(145deg, #cd7f32, #e8a862, #cd7f32, #8b4513, #cd7f32)',
+            'platinum': 'linear-gradient(145deg, #e5e4e2, #ffffff, #e5e4e2, #a9a9a9, #e5e4e2)',
+            'rose-gold': 'linear-gradient(145deg, #b76e79, #ecc5c0, #b76e79, #8b4557, #b76e79)',
+            'obsidian': 'linear-gradient(145deg, #434343, #6b6b6b, #434343, #1a1a1a, #434343)',
+            'ice': 'linear-gradient(145deg, #ffffff, #e8f4f8, #ffffff, #d0e8f0, #ffffff)'
+        };
+
+        const backgroundGradients = {
+            'dark': 'linear-gradient(145deg, #1a1a2e 0%, #16213e 50%, #0f0f23 100%)',
+            'navy': 'linear-gradient(145deg, #0a1628 0%, #1a3a5c 50%, #0d2137 100%)',
+            'purple': 'linear-gradient(145deg, #2d1b4e 0%, #4a2c7a 50%, #1f1035 100%)',
+            'red': 'linear-gradient(145deg, #3d1a1a 0%, #5c2a2a 50%, #2a0f0f 100%)',
+            'green': 'linear-gradient(145deg, #1a2e1a 0%, #2a4a2a 50%, #0f230f 100%)',
+            'black': 'linear-gradient(145deg, #0a0a0a 0%, #1a1a1a 50%, #050505 100%)'
+        };
+
+        let currentBackground = 'dark';
+        let currentFrameColor = 'none';
+
+        // Name color options
+        const nameColors = {
+            'white': { color: '#ffffff', glow: 'rgba(255, 255, 255, 0.5)' },
+            'orange': { color: '#ff6b00', glow: 'rgba(255, 107, 0, 0.5)' },
+            'blue': { color: '#00b4ff', glow: 'rgba(0, 180, 255, 0.5)' },
+            'red': { color: '#ff3333', glow: 'rgba(255, 51, 51, 0.5)' },
+            'green': { color: '#00cc66', glow: 'rgba(0, 204, 102, 0.5)' },
+            'purple': { color: '#9933ff', glow: 'rgba(153, 51, 255, 0.5)' },
+            'gold': { color: '#ffd700', glow: 'rgba(255, 215, 0, 0.5)' }
+        };
+
+        function setNameColor(colorName) {
+            document.querySelectorAll('.color-btn[data-name-color]').forEach(btn => btn.classList.remove('active'));
+            document.querySelector(`.color-btn[data-name-color="${colorName}"]`).classList.add('active');
+
+            const nameEl = document.getElementById('nameDisplay');
+            const colorData = nameColors[colorName];
+            nameEl.style.color = colorData.color;
+            nameEl.style.textShadow = `0 0 20px ${colorData.glow}`;
+        }
+
+        function setCardColor(color) {
+            document.querySelectorAll('.color-btn[data-color]').forEach(btn => btn.classList.remove('active'));
+            document.querySelector(`.color-btn[data-color="${color}"]`).classList.add('active');
+
+            currentFrameColor = color;
+            const cardFront = document.querySelector('.card-front');
+            const cardBack = document.querySelector('.card-back');
+            const iceFrameOverlay = document.getElementById('iceFrameOverlay');
+            const gradient = colorGradients[color];
+
+            // Use dark gray for full image mode, otherwise use selected background
+            const bgGradient = currentStyle === 'style-3'
+                ? 'linear-gradient(145deg, #2a2a2a 0%, #1a1a1a 50%, #0f0f0f 100%)'
+                : backgroundGradients[currentBackground];
+
+            cardFront.style.background = `${bgGradient} padding-box, ${gradient} border-box`;
+            cardBack.style.background = `linear-gradient(145deg, #2a2a2a, #1a1a1a) padding-box, ${gradient} border-box`;
+
+            // Show/hide ice frame overlay
+            if (color === 'ice') {
+                iceFrameOverlay.classList.add('active');
+            } else {
+                iceFrameOverlay.classList.remove('active');
+            }
+        }
+
+        function setCardBackground(bg) {
+            document.querySelectorAll('.color-btn[data-bg]').forEach(btn => btn.classList.remove('active'));
+            document.querySelector(`.color-btn[data-bg="${bg}"]`).classList.add('active');
+
+            currentBackground = bg;
+            const cardFront = document.querySelector('.card-front');
+            const gradient = colorGradients[currentFrameColor];
+            const bgGradient = backgroundGradients[bg];
+
+            cardFront.style.background = `${bgGradient} padding-box, ${gradient} border-box`;
+        }
+
+        // 3. Overlay options
+        function setOverlay(overlay) {
+            document.querySelectorAll('.option-btn[data-overlay]').forEach(btn => btn.classList.remove('active'));
+            document.querySelector(`.option-btn[data-overlay="${overlay}"]`).classList.add('active');
+
+            // Remove active from all overlays
+            document.querySelectorAll('.card-overlay').forEach(o => o.classList.remove('active'));
+
+            // Apply selected overlay
+            if (overlay !== 'none') {
+                document.getElementById('overlayFrontAnime').classList.toggle('active', overlay === 'anime');
+                document.getElementById('overlayFrontSignature').classList.toggle('active', overlay === 'signature');
+                document.getElementById('overlayFrontButterflies').classList.toggle('active', overlay === 'butterflies');
+                document.getElementById('overlayFrontStars').classList.toggle('active', overlay === 'stars');
+            }
+        }
+
+        // 4. Card texture options
+        let savedEdgeColor = 'none';
+        let savedBackground = 'dark';
+
+        function setCardTexture(texture) {
+            document.querySelectorAll('.option-btn[data-texture]').forEach(btn => btn.classList.remove('active'));
+            document.querySelector(`.option-btn[data-texture="${texture}"]`).classList.add('active');
+
+            // Remove active from all textures and clear inline styles
+            document.querySelectorAll('.card-texture').forEach(t => {
+                t.classList.remove('active');
+                // Clear any inline styles that might persist
+                t.style.opacity = '';
+                t.style.mixBlendMode = '';
+            });
+
+            // If crystal texture is activated, ensure blend mode is correct based on image brightness
+            if (texture === 'crystal') {
+                updateCrystalBlendMode(imageBrightness);
+            }
+
+            const frameSection = document.getElementById('frameSection');
+            const bgSection = document.getElementById('bgColorSection');
+            const cardBack = document.querySelector('.card-back');
+
+            // Handle gold texture special case
+            if (texture === 'gold') {
+                // Save current selections before overriding
+                if (currentTexture !== 'gold') {
+                    savedEdgeColor = currentFrameColor;
+                    savedBackground = currentBackground;
+                }
+                // Hide frame and background options
+                frameSection.style.display = 'none';
+                bgSection.style.display = 'none';
+                // Apply gold styling
+                setCardColor('gold');
+                const cardFront = document.querySelector('.card-front');
+                cardFront.style.background = `linear-gradient(145deg, #3d2e0a 0%, #5c4a1a 50%, #2a1f05 100%) padding-box, ${colorGradients['gold']} border-box`;
+                // Add gold class to card back for logo styling
+                cardBack.classList.add('gold-texture-active');
+                // Explicitly deactivate crystal texture when gold is active
+                const crystalFront = document.getElementById('textureFrontCrystal');
+                const crystalBack = document.getElementById('textureBackCrystal');
+                if (crystalFront) {
+                    crystalFront.classList.remove('active');
+                    crystalFront.style.opacity = ''; // Clear inline opacity
+                }
+                if (crystalBack) {
+                    crystalBack.classList.remove('active');
+                    crystalBack.style.opacity = ''; // Clear inline opacity
+                }
+            } else {
+                // Remove gold class from card back
+                cardBack.classList.remove('gold-texture-active');
+
+                // Show frame for all styles, background hidden for full image mode
+                frameSection.style.display = 'block';
+                bgSection.style.display = currentStyle === 'style-3' ? 'none' : 'block';
+
+                // Restore previous selections if coming from gold texture
+                if (currentTexture === 'gold') {
+                    setCardColor(savedEdgeColor);
+                    setCardBackground(savedBackground);
+                }
+            }
+
+            currentTexture = texture;
+
+            // Apply selected texture
+            if (texture !== 'none') {
+                document.getElementById('textureFrontMetallic').classList.toggle('active', texture === 'metallic');
+                document.getElementById('textureFrontGold').classList.toggle('active', texture === 'gold');
+                document.getElementById('textureFrontCrystal').classList.toggle('active', texture === 'crystal');
+                document.getElementById('textureBackMetallic').classList.toggle('active', texture === 'metallic');
+                document.getElementById('textureBackGold').classList.toggle('active', texture === 'gold');
+                document.getElementById('textureBackCrystal').classList.toggle('active', texture === 'crystal');
+                
+                // Update crystal blend mode after activation
+                if (texture === 'crystal') {
+                    updateCrystalBlendMode(imageBrightness);
+                }
+            }
+        }
+
+        // Touch support
+        card.addEventListener('touchstart', (e) => {
+            isDragging = true;
+            card.classList.add('dragging');
+            startX = e.touches[0].clientX;
+            startY = e.touches[0].clientY;
+        });
+
+        document.addEventListener('touchmove', (e) => {
+            if (!isDragging) return;
+
+            const deltaX = e.touches[0].clientX - startX;
+            const deltaY = e.touches[0].clientY - startY;
+
+            currentRotateY += deltaX * 0.5;
+            currentRotateX -= deltaY * 0.5;
+
+            card.style.transform = `rotateX(${currentRotateX}deg) rotateY(${currentRotateY}deg)`;
+            updateCrystalTexture();
+
+            startX = e.touches[0].clientX;
+            startY = e.touches[0].clientY;
+        });
+
+        document.addEventListener('touchend', () => {
+            isDragging = false;
+            card.classList.remove('dragging');
+        });
+    </script>
+</body>
+</html>
